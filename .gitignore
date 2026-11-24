@@ -1,0 +1,23 @@
+# Cadena de conexión local de desarrollo (la app usa localhost:5433 por defecto)
+conexion.txt
+FinOptima.Vista/conexion.txt
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Compilados
+[Bb]in/
+[Oo]bj/
+TestResults/
+*.dll
+*.pdb
+*.cache
+
+# Credenciales locales
+.env
+*.env
+
+# Exportacion generada del visor Mermaid (se versiona el .mmd, no el HTML)
+FinOptima.Entidades/Entidades/VsMerMark Diagram.html
