@@ -30,6 +30,7 @@ namespace FinOptima.Vista
 
         private void ConstruirInterfaz()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
             Text = "Meta financiera";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

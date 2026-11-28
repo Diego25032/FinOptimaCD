@@ -38,16 +38,30 @@ namespace FinOptima.Vista
             CargarAuditoria();
         }
 
+        protected override void OnShown(EventArgs argumentos)
+        {
+            base.OnShown(argumentos);
+
+            if (TopLevel)
+            {
+                UtilidadesVista.AjustarVentanaAPantalla(this);
+            }
+        }
+
         private void ConstruirInterfaz()
         {
             Tema tema = TemaActual.Actual;
 
             Text = "Administracion";
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
             StartPosition = FormStartPosition.CenterParent;
             Size = new Size(960, 640);
-            MinimumSize = new Size(860, 560);
+            Size maximo = UtilidadesVista.TamanoMaximoVentana(this);
+            MinimumSize = new Size(Math.Min(860, maximo.Width), Math.Min(560, maximo.Height));
             BackColor = tema.Fondo;
             ForeColor = tema.Texto;
+            AutoScroll = true;
             Font = new Font("Segoe UI", UtilidadesVista.TamanoFuenteSeguro(servicios.Sesion.Usuario.TamanoFuente));
 
             TabControl pestanas = new TabControl();
@@ -63,10 +77,12 @@ namespace FinOptima.Vista
 
             TabPage cuentas = new TabPage("Cuentas");
             cuentas.BackColor = tema.Fondo;
+            cuentas.AutoScroll = true;
             pestanas.TabPages.Add(cuentas);
 
             TabPage auditoria = new TabPage("Bitacora");
             auditoria.BackColor = tema.Fondo;
+            auditoria.AutoScroll = true;
             pestanas.TabPages.Add(auditoria);
 
             TabPage informacion = new TabPage("Informacion");
@@ -143,6 +159,8 @@ namespace FinOptima.Vista
             Button actualizar = UtilidadesVista.CrearBotonSecundario("Actualizar", 540, 480, 120, 34);
             actualizar.Click += AlActualizarCuentas;
             pagina.Controls.Add(actualizar);
+
+            AjustarPaginaConGrilla(pagina, grillaCuentas, rol, estado, exportar, actualizar);
         }
 
         private void ConstruirAuditoria(TabPage pagina)
@@ -163,6 +181,26 @@ namespace FinOptima.Vista
             Button actualizar = UtilidadesVista.CrearBotonSecundario("Actualizar", 20, 480, 120, 34);
             actualizar.Click += AlActualizarAuditoria;
             pagina.Controls.Add(actualizar);
+
+            AjustarPaginaConGrilla(pagina, grillaAuditoria, actualizar);
+        }
+
+        private static void AjustarPaginaConGrilla(TabPage pagina, DataGridView grilla, params Button[] botones)
+        {
+            EventHandler ajustar = delegate(object remitente, EventArgs argumentos)
+            {
+                int alto = Math.Max(180, pagina.ClientSize.Height - grilla.Top - 72);
+                grilla.Height = alto;
+                int y = grilla.Bottom + 14;
+
+                foreach (Button boton in botones)
+                {
+                    boton.Top = y;
+                }
+            };
+
+            pagina.ClientSizeChanged += ajustar;
+            ajustar(pagina, EventArgs.Empty);
         }
 
         private void ConstruirInformacion(TabPage pagina)

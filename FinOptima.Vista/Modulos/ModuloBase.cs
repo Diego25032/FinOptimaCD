@@ -271,6 +271,131 @@ namespace FinOptima.Vista.Modulos
             return UtilidadesVista.CrearBotonPeligro(texto, x, y, ancho, 32);
         }
 
+        protected void AnclarListado(DataGridView grilla, params Control[] controlesInferiores)
+        {
+            int parteSuperior = grilla.Top;
+            int altoMinimo = Math.Max(180, grilla.MinimumSize.Height);
+            int xInicial = grilla.Left;
+
+            foreach (Control control in controlesInferiores)
+            {
+                if (control.Left < xInicial)
+                {
+                    xInicial = control.Left;
+                }
+            }
+
+            int[] posicionesSuperiores = new int[controlesInferiores.Length];
+
+            for (int indice = 0; indice < controlesInferiores.Length; indice = indice + 1)
+            {
+                posicionesSuperiores[indice] = controlesInferiores[indice].Top;
+            }
+
+            bool ajustando = false;
+            EventHandler ajustar = delegate(object remitente, EventArgs argumentos)
+            {
+                if (ajustando || grilla.IsDisposed)
+                {
+                    return;
+                }
+
+                ajustando = true;
+                SuspendLayout();
+
+                try
+                {
+                    int ancho = ClientSize.Width - grilla.Left - Margen - SystemInformation.VerticalScrollBarWidth;
+                    ancho = Math.Max(320, ancho);
+                    int x = xInicial + AutoScrollPosition.X;
+                    int y = parteSuperior + AutoScrollPosition.Y + altoMinimo + 14;
+                    int grupo = 0;
+
+                    while (grupo < controlesInferiores.Length)
+                    {
+                        int superiorGrupo = posicionesSuperiores[grupo];
+                        int finGrupo = grupo + 1;
+
+                        while (finGrupo < controlesInferiores.Length && posicionesSuperiores[finGrupo] == superiorGrupo)
+                        {
+                            finGrupo = finGrupo + 1;
+                        }
+
+                        int xFila = x;
+                        int yFila = y;
+                        int altoFila = 0;
+
+                        for (int indice = grupo; indice < finGrupo; indice = indice + 1)
+                        {
+                            Control control = controlesInferiores[indice];
+                            Label etiqueta = control as Label;
+
+                            if (etiqueta != null && etiqueta.AutoSize)
+                            {
+                                UtilidadesVista.AjustarEtiqueta(etiqueta, ancho);
+                            }
+
+                            if (xFila > x && xFila + control.Width > x + ancho)
+                            {
+                                xFila = x;
+                                yFila = yFila + altoFila + 10;
+                                altoFila = 0;
+                            }
+
+                            control.Location = new Point(xFila, yFila);
+                            xFila = xFila + control.Width + 10;
+                            altoFila = Math.Max(altoFila, control.Height);
+                        }
+
+                        y = yFila + altoFila + 12;
+                        grupo = finGrupo;
+                    }
+
+                    int fondoLogico = y - AutoScrollPosition.Y;
+                    int espacioInferior = fondoLogico - parteSuperior - altoMinimo;
+                    int altoGrilla = Math.Max(altoMinimo, ClientSize.Height - parteSuperior - espacioInferior - 12);
+                    int desplazamiento = altoGrilla - altoMinimo;
+
+                    grilla.SetBounds(
+                        grilla.Left + AutoScrollPosition.X,
+                        parteSuperior + AutoScrollPosition.Y,
+                        ancho,
+                        altoGrilla);
+
+                    foreach (Control control in controlesInferiores)
+                    {
+                        control.Top = control.Top + desplazamiento;
+                    }
+
+                    int altoContenido = parteSuperior + altoGrilla + espacioInferior + 12;
+                    AutoScrollMinSize = new Size(
+                        Math.Max(ClientSize.Width, ancho + grilla.Left + Margen),
+                        Math.Max(ClientSize.Height, altoContenido));
+                }
+                finally
+                {
+                    ResumeLayout(false);
+                    ajustando = false;
+                }
+            };
+
+            grilla.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            foreach (Control control in controlesInferiores)
+            {
+                control.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+                Label etiqueta = control as Label;
+
+                if (etiqueta != null)
+                {
+                    etiqueta.TextChanged += ajustar;
+                }
+            }
+
+            Resize += ajustar;
+            ajustar(this, EventArgs.Empty);
+        }
+
         protected int FilaCampo(int yEtiqueta)
         {
             return yEtiqueta + TextRenderer.MeasureText("Ag", Font).Height + 4;

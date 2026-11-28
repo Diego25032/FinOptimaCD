@@ -13,7 +13,7 @@ La solucion `FinOptima.slnx` tiene cinco proyectos de codigo y uno de pruebas:
 | `FinOptima.Entidades` | Clases de datos del negocio (Usuario, Sobre, Movimiento, Meta, Deuda, etc.) y enums | Ninguna |
 | `FinOptima.Datos` | Acceso a PostgreSQL, contratos de repositorio, respaldos, reportes y exportacion CSV | Entidades |
 | `FinOptima.Logica` | Reglas de negocio, validaciones, seguridad, calculos y composicion de servicios | Datos y Entidades |
-| `FinOptima.Vista` | Formularios y modulos WinForms | Logica y Entidades |
+| `FinOptima.Vista` | Formularios y modulos WinForms | Logica, Entidades y Bot |
 | `FinOptima.Bot` | Chatbot de Telegram que registra movimientos usando los servicios de la Logica | Logica y Entidades |
 | `FinOptima.Pruebas` | Consola con pruebas de la capa Logica usando repositorios en memoria | Entidades, Datos, Logica y Bot |
 
@@ -21,9 +21,8 @@ Reglas de dependencia que se respetan en todo el codigo:
 
 ```text
 Vista  -> Logica -> Datos -> Entidades
-Bot ----> Logica -> Datos -> Entidades
-  |         |         |
-  +---------+---------+--> Entidades
+  |          ^         |
+  +--> Bot --+---------+
 ```
 
 - La Vista nunca abre conexiones ni escribe SQL.
@@ -126,37 +125,62 @@ Tambien existe un diagrama unico con todas las clases en
 
 ## Chatbot de Telegram
 
-`FinOptima.Bot` es una consola independiente que se conecta a la misma base de
-datos que la aplicacion y registra movimientos a partir de mensajes de Telegram.
-No requiere cambios en el esquema ni en la aplicacion de escritorio.
+El bot puede funcionar dentro de la aplicacion de escritorio o como consola
+independiente. La forma recomendada es la integrada: se inicia automaticamente
+despues del login, usa la sesion ya autenticada y se detiene al cerrar sesion o
+salir de FinOptima. No es necesario ejecutar `iniciar-bot.cmd` ni escribir la
+contrasena de FinOptima en Telegram.
 
 ### Preparacion
 
 1. En Telegram, abre `@BotFather`, envia `/newbot` y copia el token del bot.
 2. Abre `@userinfobot` y copia tu id numerico de chat.
-3. Usa la misma cuenta con la que entras a la aplicacion, porque el bot registra
-   los movimientos en esa cuenta. Si quieres separar las finanzas del bot, crea
-   otra cuenta en la aplicacion y configura sus credenciales; ten en cuenta que
-   esos movimientos no apareceran en tu cuenta principal.
-
-### Variables de entorno (PowerShell)
+3. Configura las variables de entorno de tu usuario de Windows:
 
 ```powershell
 setx FINOPTIMA_TELEGRAM_TOKEN "123456:ABC..."
 setx FINOPTIMA_TELEGRAM_CHAT "123456789"
-setx FINOPTIMA_BOT_CORREO "tu-correo@finoptima.com"
-setx FINOPTIMA_BOT_CONTRASENA "TuClave1234"
 # Opcional: usa la misma cadena que la aplicacion.
 setx FINOPTIMA_CONEXION "Host=localhost;Port=5433;Database=finoptima;Username=finoptima;Password=finoptima"
 ```
 
-Cierra y vuelve a abrir la terminal para que las variables queden disponibles.
+Cierra y vuelve a abrir FinOptima para que lea las variables nuevas. En el modo
+integrado solo se necesitan el token y el id del chat; el bot no vuelve a pedir
+las credenciales de la aplicacion.
 
-### Ejecucion
+El QR abre directamente el chat configurado, pero no es un sistema de
+vinculacion multiusuario: solo responde la cuenta de Telegram cuyo id coincide
+con `FINOPTIMA_TELEGRAM_CHAT`. Escanea el codigo desde esa misma cuenta.
 
-La forma mas simple es hacer doble clic en `iniciar-bot.cmd`. Ese lanzador lee
-las variables guardadas con `setx` directamente de Windows y las carga en el
-proceso, aunque la terminal se haya abierto antes de configurarlas.
+### Uso desde la aplicacion
+
+1. Inicia sesion en FinOptima. El bot se conecta en segundo plano.
+2. Abre `Mas -> Telegram` (o `Telegram` en la navegacion del administrador).
+3. Espera a que aparezca `Bot activo` y el nombre `@...` del bot.
+4. Escanea el QR o pulsa `Abrir Telegram`; en el chat envia `/start`.
+
+La ventana muestra el estado y el motivo si falta una variable, el token es
+invalido o Telegram no responde. `Reintentar` vuelve a intentar la conexion sin
+reiniciar la aplicacion.
+
+No ejecutes a la vez el bot independiente: dos procesos consultando `getUpdates`
+pueden interferir entre si.
+
+### Ejecucion independiente opcional
+
+Si se quiere usar el bot sin abrir FinOptima, hay que configurar ademas las
+credenciales de la cuenta que registrara los movimientos:
+
+```powershell
+setx FINOPTIMA_BOT_CORREO "tu-correo@finoptima.com"
+setx FINOPTIMA_BOT_CONTRASENA "TuClave1234"
+```
+
+La forma mas simple es hacer doble clic en `iniciar-bot.cmd`. Si falta alguna
+variable, el asistente la pedira y la guardara como variable de entorno de tu
+usuario de Windows. El token y la contrasena se escriben ocultos. El lanzador
+tambien lee las variables guardadas con `setx`, aunque la terminal se haya
+abierto antes de configurarlas.
 
 Tambien se puede ejecutar desde PowerShell:
 

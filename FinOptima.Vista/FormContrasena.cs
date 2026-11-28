@@ -23,6 +23,7 @@ namespace FinOptima.Vista
 
         private void ConstruirInterfaz()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
             Text = "Cambiar contrasena";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

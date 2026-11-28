@@ -14,6 +14,8 @@ namespace FinOptima.Vista
         private TextBox campoCorreo;
         private TextBox campoContrasena;
         private Label etiquetaEstadoCon;
+        private Label notaConexion;
+        private ServicioBotLocal botLocal;
         private bool principalCerroSesion;
 
         public FormLogin(FabricaServicios fabrica)
@@ -27,6 +29,8 @@ namespace FinOptima.Vista
             Tema tema = TemaActual.Actual;
 
             Text = "FinOptima - Iniciar sesion";
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
             UtilidadesVista.AplicarIcono(this);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -67,10 +71,10 @@ namespace FinOptima.Vista
             subtitulo.Font = fuenteSubtitulo;
             subtitulo.AutoSize = true;
             subtitulo.MaximumSize = new Size(440, 0);
-            subtitulo.Location = new Point(33, titulo.Bottom + 2);
+            subtitulo.Location = new Point(33, titulo.Bottom + 6);
             cabecera.Controls.Add(subtitulo);
 
-            int alturaCabecera = subtitulo.Bottom + 14;
+            int alturaCabecera = subtitulo.Bottom + 18;
             cabecera.Height = alturaCabecera;
 
             int y = alturaCabecera + 26;
@@ -106,18 +110,17 @@ namespace FinOptima.Vista
             etiquetaEstadoCon.Location = new Point(33, yEstado);
             etiquetaEstadoCon.AutoSize = true;
             etiquetaEstadoCon.MaximumSize = new Size(440, 0);
+            etiquetaEstadoCon.Text = "Comprobando conexion con PostgreSQL...";
             etiquetaEstadoCon.ForeColor = tema.TextoSecundario;
             etiquetaEstadoCon.BackColor = Color.Transparent;
             Controls.Add(etiquetaEstadoCon);
 
-            Label nota = UtilidadesVista.CrearNota("Los datos se guardan en PostgreSQL. Revisa conexion.txt si la conexion falla.", 33, yEstado + 60, 450);
-            nota.Font = new Font("Segoe UI", 8);
-            Controls.Add(nota);
+            notaConexion = UtilidadesVista.CrearNota("Los datos se guardan en PostgreSQL. Revisa Docker o FINOPTIMA_CONEXION si la conexion falla.", 33, 0, 450);
+            notaConexion.Font = new Font("Segoe UI", 8);
+            Controls.Add(notaConexion);
 
             AcceptButton = entrar;
-
-            ClientSize = new Size(520, yEstado + 130);
-            MinimumSize = Size;
+            AjustarTamanoEstado();
         }
 
         protected override void OnShown(EventArgs e)
@@ -139,6 +142,16 @@ namespace FinOptima.Vista
                 etiquetaEstadoCon.Text = "Conexion: " + error.Message;
                 etiquetaEstadoCon.ForeColor = TemaActual.Actual.Peligro;
             }
+
+            AjustarTamanoEstado();
+        }
+
+        private void AjustarTamanoEstado()
+        {
+            notaConexion.Top = etiquetaEstadoCon.Bottom + 10;
+            int ancho = Math.Max(520, campoCorreo.Right + 33);
+            ClientSize = new Size(ancho, Math.Max(460, notaConexion.Bottom + 26));
+            UtilidadesVista.AjustarVentanaAPantalla(this);
         }
 
         private void AlIniciarSesion(object remitente, EventArgs argumentos)
@@ -181,9 +194,12 @@ namespace FinOptima.Vista
             campoContrasena.Clear();
             Hide();
 
+            botLocal = new ServicioBotLocal(servicios);
+            botLocal.IniciarAsync();
+
             if (servicios.Sesion.EsAdministrador)
             {
-                using (FormPrincipalAdministrador principal = new FormPrincipalAdministrador(servicios))
+                using (FormPrincipalAdministrador principal = new FormPrincipalAdministrador(servicios, botLocal))
                 {
                     principal.ShowDialog();
                     principalCerroSesion = principal.CerroSesion;
@@ -191,12 +207,14 @@ namespace FinOptima.Vista
             }
             else
             {
-                using (FormPrincipal principal = new FormPrincipal(servicios))
+                using (FormPrincipal principal = new FormPrincipal(servicios, botLocal))
                 {
                     principal.ShowDialog();
                     principalCerroSesion = principal.CerroSesion;
                 }
             }
+
+            DetenerBotLocal();
 
             if (servicios.Sesion.HaySesion)
             {
@@ -213,6 +231,24 @@ namespace FinOptima.Vista
             {
                 Close();
             }
+        }
+
+        private void DetenerBotLocal()
+        {
+            if (botLocal == null)
+            {
+                return;
+            }
+
+            botLocal.Detener();
+            botLocal.Dispose();
+            botLocal = null;
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            DetenerBotLocal();
+            base.OnFormClosed(e);
         }
     }
 }

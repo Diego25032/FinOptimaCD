@@ -34,7 +34,7 @@ namespace FinOptima.Datos.Conexion
             }
             catch (NpgsqlException error)
             {
-                throw new ErrorBaseDatos("No se pudo conectar con PostgreSQL. Verifica que Docker esté encendido y que conexion.txt tenga los datos correctos.", error);
+                throw new ErrorBaseDatos("No se pudo conectar con PostgreSQL. Enciende Docker y ejecuta 'docker compose up -d'; si usas Supabase u otra base, revisa FINOPTIMA_CONEXION.", error);
             }
         }
 

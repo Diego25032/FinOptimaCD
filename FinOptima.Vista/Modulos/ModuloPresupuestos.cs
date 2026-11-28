@@ -92,6 +92,8 @@ namespace FinOptima.Vista.Modulos
             actualizar.Click += AlActualizar;
             Controls.Add(actualizar);
 
+            AnclarListado(grilla, resumen, nuevo, editar, eliminar, actualizar);
+
             campoMes.SelectedIndexChanged += AlCambiarPeriodo;
             campoAnio.ValueChanged += AlCambiarPeriodo;
         }

@@ -35,6 +35,7 @@ namespace FinOptima.Vista
 
         private void ConstruirInterfaz()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
             Text = "Movimiento";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

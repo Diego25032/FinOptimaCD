@@ -14,6 +14,12 @@ namespace FinOptima.Vista.Modulos
     public class ModuloPerfil : ModuloBase
     {
         private Usuario usuario;
+        private Label nota;
+        private Label etiquetaNombre;
+        private Label correo;
+        private Label rol;
+        private Label etiquetaColor;
+        private Label etiquetaFuente;
         private TextBox campoNombre;
         private TextBox campoColor;
         private NumericUpDown campoFuente;
@@ -23,6 +29,12 @@ namespace FinOptima.Vista.Modulos
         private CheckBox alertaSobres;
         private PictureBox foto;
         private Panel muestraColor;
+        private Panel marcoColor;
+        private GroupBox grupoAlertas;
+        private Button cargarFoto;
+        private Button quitarFoto;
+        private Button guardar;
+        private Button contrasena;
         private byte[] fotoSeleccionada;
         private bool fotoCambiada;
 
@@ -45,33 +57,37 @@ namespace FinOptima.Vista.Modulos
 
             ConstruirInterfaz();
             CargarDatos();
+            Distribuir();
         }
 
         private void ConstruirInterfaz()
         {
-            Controls.Add(UtilidadesVista.CrearNota("Actualiza tus datos, la apariencia de la aplicacion y tus alertas.", Margen, 55, 880));
+            nota = UtilidadesVista.CrearNota("Actualiza tus datos, la apariencia de la aplicacion y tus alertas.", Margen, InicioContenido, 880);
+            Controls.Add(nota);
 
             int filaNombre = 90;
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Nombre completo", Margen, filaNombre));
+            etiquetaNombre = UtilidadesVista.CrearEtiqueta("Nombre completo", Margen, filaNombre);
+            Controls.Add(etiquetaNombre);
             campoNombre = UtilidadesVista.CrearCampo(Margen, FilaCampo(filaNombre), 300);
             Controls.Add(campoNombre);
 
             int filaCuenta = FilaCampo(filaNombre) + 34;
-            Label correo = UtilidadesVista.CrearEtiqueta("Correo: " + usuario.Correo, Margen, filaCuenta);
+            correo = UtilidadesVista.CrearEtiqueta("Correo: " + usuario.Correo, Margen, filaCuenta);
             correo.ForeColor = TemaActual.Actual.TextoSecundario;
             Controls.Add(correo);
 
-            Label rol = UtilidadesVista.CrearEtiqueta("Rol: " + NombreRol(), Margen, filaCuenta + 26);
+            rol = UtilidadesVista.CrearEtiqueta("Rol: " + NombreRol(), Margen, filaCuenta + 26);
             rol.ForeColor = TemaActual.Actual.TextoSecundario;
             Controls.Add(rol);
 
             int filaColor = filaCuenta + 54;
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Color de acento (#RRGGBB)", Margen, filaColor));
+            etiquetaColor = UtilidadesVista.CrearEtiqueta("Color de acento (#RRGGBB)", Margen, filaColor);
+            Controls.Add(etiquetaColor);
             campoColor = UtilidadesVista.CrearCampo(Margen, FilaCampo(filaColor), 140);
             campoColor.TextChanged += AlCambiarColor;
             Controls.Add(campoColor);
 
-            Panel marcoColor = new Panel();
+            marcoColor = new Panel();
             marcoColor.Location = new Point(Margen + 155, FilaCampo(filaColor));
             marcoColor.Size = new Size(42, 26);
             marcoColor.BackColor = TemaActual.Actual.Borde;
@@ -83,7 +99,8 @@ namespace FinOptima.Vista.Modulos
             marcoColor.Controls.Add(muestraColor);
 
             int filaFuente = FilaCampo(filaColor) + 38;
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Tamano de letra (8 a 14)", Margen, filaFuente));
+            etiquetaFuente = UtilidadesVista.CrearEtiqueta("Tamano de letra (8 a 14)", Margen, filaFuente);
+            Controls.Add(etiquetaFuente);
             campoFuente = new NumericUpDown();
             campoFuente.Location = new Point(Margen, FilaCampo(filaFuente));
             campoFuente.Width = 80;
@@ -93,7 +110,7 @@ namespace FinOptima.Vista.Modulos
             Controls.Add(campoFuente);
 
             int filaAlertas = FilaCampo(filaFuente) + 38;
-            GroupBox grupoAlertas = new GroupBox();
+            grupoAlertas = new GroupBox();
             grupoAlertas.Text = "Alertas";
             grupoAlertas.Location = new Point(Margen, filaAlertas);
             grupoAlertas.Size = new Size(310, 150);
@@ -114,22 +131,121 @@ namespace FinOptima.Vista.Modulos
             foto.BackColor = TemaActual.Actual.Superficie;
             Controls.Add(foto);
 
-            Button cargarFoto = BotonSecundario("Cargar foto", Margen + 350, 242, 140);
+            cargarFoto = BotonSecundario("Cargar foto", Margen + 350, 242, 140);
             cargarFoto.Click += AlCargarFoto;
             Controls.Add(cargarFoto);
 
-            Button quitarFoto = BotonPeligro("Quitar foto", Margen + 350, 282, 140);
+            quitarFoto = BotonPeligro("Quitar foto", Margen + 350, 282, 140);
             quitarFoto.Click += AlQuitarFoto;
             Controls.Add(quitarFoto);
 
             int filaBotones = filaAlertas + 175;
-            Button guardar = Boton("Guardar cambios", Margen, filaBotones, 180);
+            guardar = Boton("Guardar cambios", Margen, filaBotones, 180);
             guardar.Click += AlGuardar;
             Controls.Add(guardar);
 
-            Button contrasena = BotonSecundario("Cambiar contrasena", Margen + 200, filaBotones, 190);
+            contrasena = BotonSecundario("Cambiar contrasena", Margen + 200, filaBotones, 190);
             contrasena.Click += AlCambiarContrasena;
             Controls.Add(contrasena);
+        }
+
+        protected override void OnResize(EventArgs argumentos)
+        {
+            base.OnResize(argumentos);
+            Distribuir();
+        }
+
+        private void Distribuir()
+        {
+            if (campoNombre == null || guardar == null || Recalculando)
+            {
+                return;
+            }
+
+            Recalculando = true;
+            SuspendLayout();
+
+            try
+            {
+                int ancho = ClientSize.Width - Margen * 2;
+                int alto = DistribuirEnAncho(ancho);
+
+                if (alto > ClientSize.Height && !VerticalScroll.Visible)
+                {
+                    ancho = ClientSize.Width - Margen * 2 - SystemInformation.VerticalScrollBarWidth;
+                    alto = DistribuirEnAncho(ancho);
+                }
+
+                AutoScrollMinSize = new Size(
+                    Math.Max(ClientSize.Width, ancho + Margen * 2),
+                    Math.Max(ClientSize.Height, alto));
+            }
+            finally
+            {
+                ResumeLayout(false);
+                Recalculando = false;
+            }
+        }
+
+        private int DistribuirEnAncho(int ancho)
+        {
+            int separacion = Escalar(24);
+            ancho = Math.Max(Escalar(320), ancho);
+            int x = Margen + AutoScrollPosition.X;
+            bool fotoALaLado = ancho >= Escalar(760);
+            int anchoIzquierdo = fotoALaLado
+                ? Math.Min(Escalar(520), ancho - Escalar(200) - separacion)
+                : ancho;
+
+            UtilidadesVista.AjustarEtiqueta(nota, ancho);
+
+            int y = nota.Bottom + 14;
+            etiquetaNombre.Location = new Point(x, y);
+            campoNombre.SetBounds(x, etiquetaNombre.Bottom + 4, Math.Min(Escalar(420), anchoIzquierdo), campoNombre.Height);
+
+            correo.Location = new Point(x, campoNombre.Bottom + 10);
+            UtilidadesVista.AjustarEtiqueta(correo, anchoIzquierdo);
+            rol.Location = new Point(x, correo.Bottom + 4);
+            UtilidadesVista.AjustarEtiqueta(rol, anchoIzquierdo);
+
+            etiquetaColor.Location = new Point(x, rol.Bottom + 14);
+            int yColor = etiquetaColor.Bottom + 4;
+            int anchoColor = Math.Min(Escalar(140), Math.Max(Escalar(90), anchoIzquierdo - Escalar(90)));
+            campoColor.SetBounds(x, yColor, anchoColor, campoColor.Height);
+
+            marcoColor.SetBounds(x + campoColor.Right + 16, yColor, Escalar(42), Escalar(26));
+            muestraColor.SetBounds(1, 1, marcoColor.Width - 2, marcoColor.Height - 2);
+
+            etiquetaFuente.Location = new Point(x, marcoColor.Bottom + 14);
+            campoFuente.SetBounds(x, etiquetaFuente.Bottom + 4, Escalar(80), campoFuente.Height);
+
+            grupoAlertas.SetBounds(x, campoFuente.Bottom + 16, anchoIzquierdo, Escalar(150));
+
+            int xFoto = fotoALaLado ? x + anchoIzquierdo + separacion : x;
+            int yFoto = fotoALaLado ? etiquetaNombre.Top : grupoAlertas.Bottom + 24;
+            int ladoFoto = Escalar(140);
+
+            foto.SetBounds(xFoto, yFoto, ladoFoto, ladoFoto);
+            cargarFoto.SetBounds(xFoto, foto.Bottom + 12, ladoFoto, cargarFoto.Height);
+            quitarFoto.SetBounds(xFoto, cargarFoto.Bottom + 10, ladoFoto, quitarFoto.Height);
+
+            int yBotones = Math.Max(grupoAlertas.Bottom, quitarFoto.Bottom) + 24;
+            bool botonesEnLinea = ancho >= Escalar(400);
+            int anchoGuardar = botonesEnLinea
+                ? Math.Min(Escalar(180), Math.Max(Escalar(120), (ancho - separacion) / 2))
+                : Math.Min(Escalar(180), ancho);
+            int anchoContrasena = botonesEnLinea
+                ? Math.Min(Escalar(190), ancho - anchoGuardar - separacion)
+                : Math.Min(Escalar(190), ancho);
+
+            guardar.SetBounds(x, yBotones, anchoGuardar, guardar.Height);
+            contrasena.SetBounds(
+                botonesEnLinea ? x + anchoGuardar + separacion : x,
+                botonesEnLinea ? yBotones : guardar.Bottom + 10,
+                anchoContrasena,
+                contrasena.Height);
+
+            return contrasena.Bottom - AutoScrollPosition.Y + Margen;
         }
 
         private CheckBox CrearAlerta(string texto, int y, GroupBox grupo)

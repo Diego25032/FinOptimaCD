@@ -10,6 +10,7 @@ namespace FinOptima.Vista
         internal static void Main()
         {
             ApplicationConfiguration.Initialize();
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
             using (FormBienvenida bienvenida = new FormBienvenida())
             {

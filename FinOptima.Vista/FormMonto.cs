@@ -18,32 +18,35 @@ namespace FinOptima.Vista
         public FormMonto(string titulo, string descripcion, decimal maximo)
         {
             Text = titulo;
+            AutoScaleMode = AutoScaleMode.Dpi;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
-            ClientSize = new Size(400, 210);
+            StartPosition = FormStartPosition.CenterParent;
 
             Label rotulo = UtilidadesVista.CrearNota(descripcion, 24, 20, 350);
             Controls.Add(rotulo);
 
             campoMonto = new NumericUpDown();
-            campoMonto.Location = new Point(24, 70);
+            campoMonto.Location = new Point(24, rotulo.Bottom + 12);
             campoMonto.Width = 350;
             campoMonto.DecimalPlaces = 2;
             campoMonto.Maximum = maximo;
             campoMonto.Increment = 10000;
             Controls.Add(campoMonto);
 
-            Button aceptar = UtilidadesVista.CrearBoton("Aceptar", 24, 125, 170, 38, TemaActual.Acento);
+            int yBotones = campoMonto.Bottom + 20;
+            Button aceptar = UtilidadesVista.CrearBoton("Aceptar", 24, yBotones, 170, 38, TemaActual.Acento);
             aceptar.Click += AlAceptar;
             Controls.Add(aceptar);
 
-            Button cancelar = UtilidadesVista.CrearBotonSecundario("Cancelar", 204, 125, 170, 38);
+            Button cancelar = UtilidadesVista.CrearBotonSecundario("Cancelar", 204, yBotones, 170, 38);
             cancelar.Click += AlCancelar;
             Controls.Add(cancelar);
 
             AcceptButton = aceptar;
             CancelButton = cancelar;
+            ClientSize = new Size(400, Math.Max(210, cancelar.Bottom + 24));
 
             UtilidadesVista.PrepararFormulario(this);
             UtilidadesVista.EstilizarCampos(this);

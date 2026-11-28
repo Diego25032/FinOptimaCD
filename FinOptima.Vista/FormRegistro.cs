@@ -32,10 +32,15 @@ namespace FinOptima.Vista
         private void ConstruirInterfaz()
         {
             Text = "FinOptima - Crear cuenta";
+            AutoScaleMode = AutoScaleMode.Dpi;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
-            ClientSize = new Size(480, 440);
+            StartPosition = FormStartPosition.CenterParent;
+            BackColor = TemaActual.Actual.Fondo;
+            ForeColor = TemaActual.Actual.Texto;
+            Font = new Font("Segoe UI", 10);
+            AutoScroll = true;
 
             Label titulo = new Label();
             titulo.Text = "Crear una cuenta";
@@ -46,36 +51,47 @@ namespace FinOptima.Vista
             titulo.BackColor = Color.Transparent;
             Controls.Add(titulo);
 
-            Controls.Add(UtilidadesVista.CrearNota("Las cuentas nuevas se crean como usuarios normales. Un administrador puede cambiar el rol.", 32, 58, 400));
+            Label nota = UtilidadesVista.CrearNota("Las cuentas nuevas se crean como usuarios normales. Un administrador puede cambiar el rol.", 32, titulo.Bottom + 12, 400);
+            Controls.Add(nota);
 
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Nombre completo", 32, 90));
-            campoNombre = UtilidadesVista.CrearCampo(32, 112, 400);
+            int yNombre = nota.Bottom + 14;
+            Label rotuloNombre = UtilidadesVista.CrearEtiqueta("Nombre completo", 32, yNombre);
+            Controls.Add(rotuloNombre);
+            campoNombre = UtilidadesVista.CrearCampo(32, rotuloNombre.Bottom + 6, 400);
             Controls.Add(campoNombre);
 
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Correo electronico", 32, 150));
-            campoCorreo = UtilidadesVista.CrearCampo(32, 172, 400);
+            int yCorreo = campoNombre.Bottom + 14;
+            Label rotuloCorreo = UtilidadesVista.CrearEtiqueta("Correo electronico", 32, yCorreo);
+            Controls.Add(rotuloCorreo);
+            campoCorreo = UtilidadesVista.CrearCampo(32, rotuloCorreo.Bottom + 6, 400);
             Controls.Add(campoCorreo);
 
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Contrasena (minimo 8 caracteres y un numero)", 32, 210));
-            campoContrasena = UtilidadesVista.CrearCampo(32, 232, 400);
+            int yContrasena = campoCorreo.Bottom + 14;
+            Label rotuloContrasena = UtilidadesVista.CrearEtiqueta("Contrasena (minimo 8 caracteres y un numero)", 32, yContrasena);
+            Controls.Add(rotuloContrasena);
+            campoContrasena = UtilidadesVista.CrearCampo(32, rotuloContrasena.Bottom + 6, 400);
             campoContrasena.UseSystemPasswordChar = true;
             Controls.Add(campoContrasena);
 
-            Controls.Add(UtilidadesVista.CrearEtiqueta("Confirmar contrasena", 32, 270));
-            campoConfirmacion = UtilidadesVista.CrearCampo(32, 292, 400);
+            int yConfirmacion = campoContrasena.Bottom + 14;
+            Label rotuloConfirmacion = UtilidadesVista.CrearEtiqueta("Confirmar contrasena", 32, yConfirmacion);
+            Controls.Add(rotuloConfirmacion);
+            campoConfirmacion = UtilidadesVista.CrearCampo(32, rotuloConfirmacion.Bottom + 6, 400);
             campoConfirmacion.UseSystemPasswordChar = true;
             Controls.Add(campoConfirmacion);
 
-            Button crear = UtilidadesVista.CrearBoton("Crear cuenta", 32, 350, 190, 38, TemaActual.Acento);
+            int yBotones = campoConfirmacion.Bottom + 22;
+            Button crear = UtilidadesVista.CrearBoton("Crear cuenta", 32, yBotones, 190, 38, TemaActual.Acento);
             crear.Click += AlRegistrar;
             Controls.Add(crear);
 
-            Button cancelar = UtilidadesVista.CrearBotonSecundario("Cancelar", 242, 350, 190, 38);
+            Button cancelar = UtilidadesVista.CrearBotonSecundario("Cancelar", 242, yBotones, 190, 38);
             cancelar.Click += AlCancelar;
             Controls.Add(cancelar);
 
             AcceptButton = crear;
             CancelButton = cancelar;
+            ClientSize = new Size(480, Math.Max(440, cancelar.Bottom + 30));
 
             UtilidadesVista.PrepararFormulario(this);
             UtilidadesVista.EstilizarCampos(this);

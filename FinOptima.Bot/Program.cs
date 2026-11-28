@@ -49,9 +49,21 @@ namespace FinOptima.Bot
 
             Console.WriteLine("Sesion iniciada como " + sesion.Usuario.NombreCompleto + " (" + sesion.Usuario.Correo + ").");
             Console.WriteLine("Chat autorizado: " + configuracion.ChatId);
-            Console.WriteLine("Bot escuchando mensajes. Envia /start en Telegram para ver los botones. Presiona Ctrl+C para salir.");
+            Console.WriteLine("Comprobando la conexion con Telegram...");
 
             ClienteTelegram cliente = new ClienteTelegram(configuracion.Token);
+
+            try
+            {
+                cliente.ObtenerActualizaciones(0, 0);
+            }
+            catch (Exception error)
+            {
+                MostrarError("No se pudo activar Telegram: " + error.Message + ". Verifica el token, cierra otras copias del bot y elimina cualquier webhook activo; este bot funciona por polling.");
+                return 1;
+            }
+
+            Console.WriteLine("Bot escuchando mensajes. Envia /start en Telegram para ver los botones. Presiona Ctrl+C para salir.");
 
             try
             {

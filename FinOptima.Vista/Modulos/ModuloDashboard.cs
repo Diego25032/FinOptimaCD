@@ -50,6 +50,21 @@ namespace FinOptima.Vista.Modulos
         private Label notaAlertas;
         private Label[] rotulosMedidor = new Label[3];
         private Label[] notasMedidor = new Label[3];
+        private static readonly Color[] coloresCategoria = new Color[]
+        {
+            Color.FromArgb(23, 201, 100),
+            Color.FromArgb(0, 145, 255),
+            Color.FromArgb(245, 165, 36),
+            Color.FromArgb(147, 97, 255),
+            Color.FromArgb(243, 18, 96),
+            Color.FromArgb(0, 184, 169),
+            Color.FromArgb(236, 72, 153),
+            Color.FromArgb(120, 134, 150),
+            Color.FromArgb(151, 96, 51),
+            Color.FromArgb(0, 188, 212),
+            Color.FromArgb(130, 160, 45),
+            Color.FromArgb(82, 96, 190)
+        };
 
         public ModuloDashboard(FabricaServicios servicios) : base(servicios, "Panel general")
         {
@@ -247,15 +262,6 @@ namespace FinOptima.Vista.Modulos
             Distribuir();
         }
 
-        /// <summary>
-        /// Acomoda el panel en tres filas que llenan la ventana:
-        ///   1. Cuenta principal + tres medidores.
-        ///   2. Tendencia de saldo + estructura de gastos.
-        ///   3. Distribucion de sobres + alertas.
-        /// Las alturas salen del espacio disponible y de la fuente real (escala de Windows),
-        /// asi que en pantallas grandes todo cabe sin scroll y en pantallas pequenas aparece
-        /// un scroll vertical sin cortar el contenido de las tarjetas.
-        /// </summary>
         private void Distribuir()
         {
             if (tarjetaCuenta == null || Recalculando)
@@ -271,67 +277,29 @@ namespace FinOptima.Vista.Modulos
                 int espacio = Escalar(16);
                 int inicio = InicioContenido;
                 int inicioLogico = inicio - AutoScrollPosition.Y;
-
-                // ---- Alturas ----
-                int altoValorMedidor = valorSaldo.PreferredHeight + 4;
-                int cabeceraMedidor = notasMedidor[0].Bottom + 6;
-                int altoFila1 = cabeceraMedidor + Escalar(78) + altoValorMedidor + Escalar(14);
-
-                int altoCuentaNecesario = Escalar(18) + etiquetaCuentaRotulo.Height + 6 + etiquetaCuentaSaldo.PreferredHeight
-                    + etiquetaCuentaNota.PreferredHeight * 2 + 10 + botonActualizarCuenta.Height + Escalar(16);
-
-                if (altoCuentaNecesario > altoFila1)
-                {
-                    altoFila1 = altoCuentaNecesario;
-                }
-
+                int altoCuenta = Math.Max(Escalar(190), Escalar(18) + etiquetaCuentaRotulo.Height + 6
+                    + etiquetaCuentaSaldo.PreferredHeight + etiquetaCuentaNota.PreferredHeight * 2
+                    + 10 + botonActualizarCuenta.Height + Escalar(16));
+                int altoMedidor = Math.Max(Escalar(190), notasMedidor[0].Bottom + 6 + Escalar(78)
+                    + valorSaldo.PreferredHeight + 4 + Escalar(14));
+                int altoFila1 = Math.Max(altoCuenta, altoMedidor);
                 int minimoFila2 = Escalar(250);
                 int minimoFila3 = Escalar(220);
                 int disponible = ClientSize.Height - inicioLogico - altoFila1 - espacio * 3;
-                int altoFila2 = (disponible * 54) / 100;
-                int altoFila3 = disponible - altoFila2;
-
-                if (altoFila2 < minimoFila2)
-                {
-                    altoFila2 = minimoFila2;
-                }
-
-                if (altoFila3 < minimoFila3)
-                {
-                    altoFila3 = minimoFila3;
-                }
-
-                int altoContenido = inicioLogico + altoFila1 + espacio + altoFila2 + espacio + altoFila3 + espacio;
-
-                // ---- Ancho (descontando la barra de scroll si va a aparecer) ----
-                int anchoCliente = ClientSize.Width;
-
-                if (altoContenido > ClientSize.Height && !VerticalScroll.Visible)
-                {
-                    anchoCliente = anchoCliente - SystemInformation.VerticalScrollBarWidth;
-                }
-
-                int ancho = anchoCliente - Margen * 2;
-                int anchoMinimo = Escalar(980);
-
-                if (ancho < anchoMinimo)
-                {
-                    ancho = anchoMinimo;
-                }
-
+                int altoFila2 = Math.Max(minimoFila2, (disponible * 54) / 100);
+                int altoFila3 = Math.Max(minimoFila3, disponible - altoFila2);
+                int ancho = Math.Max(Escalar(320), ClientSize.Width - Margen * 2 - SystemInformation.VerticalScrollBarWidth);
                 int x = Margen + AutoScrollPosition.X;
-
-                // ---- Fila 1: cuenta + medidores ----
-                int anchoCuenta = (ancho * 32) / 100;
-
-                if (anchoCuenta < Escalar(330))
-                {
-                    anchoCuenta = Escalar(330);
-                }
-
-                int anchoMedidor = (ancho - anchoCuenta - espacio * 3) / 3;
                 int y = inicio;
 
+                if (ancho < Escalar(980))
+                {
+                    DistribuirEstrecho(ancho, x, y, espacio, altoCuenta, altoMedidor, altoFila2, altoFila3);
+                    return;
+                }
+
+                int anchoCuenta = Math.Max(Escalar(330), (ancho * 32) / 100);
+                int anchoMedidor = (ancho - anchoCuenta - espacio * 3) / 3;
                 tarjetaCuenta.SetBounds(x, y, anchoCuenta, altoFila1);
                 DistribuirCuenta(anchoCuenta, altoFila1);
 
@@ -341,18 +309,10 @@ namespace FinOptima.Vista.Modulos
 
                 for (int indice = 0; indice < 3; indice = indice + 1)
                 {
-                    int xTarjeta = x + anchoCuenta + espacio + (anchoMedidor + espacio) * indice;
-                    tarjetas[indice].SetBounds(xTarjeta, y, anchoMedidor, altoFila1);
-
-                    int anchoInterior = anchoMedidor - 36;
-                    int yValor = altoFila1 - Escalar(12) - altoValorMedidor;
-                    notasMedidor[indice].AutoSize = false;
-                    notasMedidor[indice].SetBounds(20, rotulosMedidor[indice].Bottom + 2, anchoInterior, notasMedidor[indice].PreferredHeight);
-                    medidores[indice].SetBounds(18, cabeceraMedidor, anchoInterior, yValor - cabeceraMedidor);
-                    valores[indice].SetBounds(20, yValor, anchoInterior, altoValorMedidor);
+                    ColocarMedidor(indice, tarjetas[indice], medidores[indice], valores[indice],
+                        x + anchoCuenta + espacio + (anchoMedidor + espacio) * indice, y, anchoMedidor, altoFila1);
                 }
 
-                // ---- Fila 2: tendencia + estructura ----
                 y = y + altoFila1 + espacio;
                 int anchoTendencia = (ancho * 60) / 100;
                 int anchoEstructura = ancho - anchoTendencia - espacio;
@@ -363,30 +323,16 @@ namespace FinOptima.Vista.Modulos
                     anchoTendencia = ancho - anchoEstructura - espacio;
                 }
 
-                tarjetaTendencia.SetBounds(x, y, anchoTendencia, altoFila2);
-                tarjetaEstructura.SetBounds(x + anchoTendencia + espacio, y, anchoEstructura, altoFila2);
+                ColocarTendencia(x, y, anchoTendencia, altoFila2);
+                ColocarEstructura(x + anchoTendencia + espacio, y, anchoEstructura, altoFila2);
 
-                int topTendencia = notaTendencia.Bottom + 10;
-                int topEstructura = notaEstructura.Bottom + 4;
-                graficoTendencia.SetBounds(16, topTendencia, anchoTendencia - 32, altoFila2 - topTendencia - 14);
-                graficoEstructura.SetBounds(6, topEstructura, anchoEstructura - 12, altoFila2 - topEstructura - 8);
-
-                // ---- Fila 3: sobres + alertas ----
                 y = y + altoFila2 + espacio;
                 int anchoSobres = (ancho * 58) / 100;
                 int anchoAlertas = ancho - anchoSobres - espacio;
+                ColocarSobres(x, y, anchoSobres, altoFila3);
+                ColocarAlertas(x + anchoSobres + espacio, y, anchoAlertas, altoFila3);
 
-                tarjetaSobres.SetBounds(x, y, anchoSobres, altoFila3);
-                tarjetaAlertas.SetBounds(x + anchoSobres + espacio, y, anchoAlertas, altoFila3);
-
-                int topSobres = etiquetaTotalSobres.Bottom + 10;
-                int topAlertas = notaAlertas.Bottom + 10;
-                notaAlertas.AutoSize = false;
-                notaAlertas.SetBounds(22, rotuloAlertas.Bottom + 2, anchoAlertas - 44, notaAlertas.PreferredHeight);
-                grillaSobres.SetBounds(16, topSobres, anchoSobres - 32, altoFila3 - topSobres - 16);
-                grillaAlertas.SetBounds(16, topAlertas, anchoAlertas - 32, altoFila3 - topAlertas - 16);
-                etiquetaSinAlertas.SetBounds(16, topAlertas, anchoAlertas - 32, altoFila3 - topAlertas - 16);
-
+                int altoContenido = inicioLogico + altoFila1 + espacio + altoFila2 + espacio + altoFila3 + espacio;
                 AutoScrollMinSize = new Size(ancho + Margen * 2, altoContenido);
             }
             finally
@@ -394,6 +340,85 @@ namespace FinOptima.Vista.Modulos
                 ResumeLayout(false);
                 Recalculando = false;
             }
+        }
+
+        private void DistribuirEstrecho(int ancho, int x, int y, int espacio, int altoCuenta,
+            int altoMedidor, int altoFila2, int altoFila3)
+        {
+            tarjetaCuenta.SetBounds(x, y, ancho, altoCuenta);
+            DistribuirCuenta(ancho, altoCuenta);
+            y = y + altoCuenta + espacio;
+
+            TarjetaPanel[] tarjetas = { tarjetaSaldo, tarjetaFlujo, tarjetaGastos };
+            MedidorSemicirculo[] medidores = { medidorSaldo, medidorFlujo, medidorGastos };
+            Label[] valores = { valorSaldo, valorFlujo, valorGastos };
+            bool medidoresEnFila = ancho >= Escalar(720);
+            int anchoMedidor = medidoresEnFila ? (ancho - espacio * 2) / 3 : ancho;
+
+            for (int indice = 0; indice < 3; indice = indice + 1)
+            {
+                int xTarjeta = medidoresEnFila ? x + (anchoMedidor + espacio) * indice : x;
+                int yTarjeta = medidoresEnFila ? y : y + (altoMedidor + espacio) * indice;
+                ColocarMedidor(indice, tarjetas[indice], medidores[indice], valores[indice],
+                    xTarjeta, yTarjeta, anchoMedidor, altoMedidor);
+            }
+
+            y = y + (medidoresEnFila ? altoMedidor : altoMedidor * 3 + espacio * 2) + espacio;
+            ColocarTendencia(x, y, ancho, altoFila2);
+            y = y + altoFila2 + espacio;
+            ColocarEstructura(x, y, ancho, altoFila2);
+            y = y + altoFila2 + espacio;
+            ColocarSobres(x, y, ancho, altoFila3);
+            y = y + altoFila3 + espacio;
+            ColocarAlertas(x, y, ancho, altoFila3);
+            y = y + altoFila3;
+
+            AutoScrollMinSize = new Size(ancho + Margen * 2, y - AutoScrollPosition.Y + Margen);
+        }
+
+        private void ColocarMedidor(int indice, TarjetaPanel tarjeta, MedidorSemicirculo medidor,
+            Label valor, int x, int y, int ancho, int alto)
+        {
+            tarjeta.SetBounds(x, y, ancho, alto);
+            int anchoInterior = ancho - 36;
+            int altoValor = valor.PreferredHeight + 4;
+            int cabecera = notasMedidor[indice].Bottom + 6;
+            int yValor = alto - Escalar(12) - altoValor;
+            notasMedidor[indice].AutoSize = false;
+            notasMedidor[indice].SetBounds(20, rotulosMedidor[indice].Bottom + 2, anchoInterior, notasMedidor[indice].PreferredHeight);
+            medidor.SetBounds(18, cabecera, anchoInterior, Math.Max(1, yValor - cabecera));
+            valor.SetBounds(20, yValor, anchoInterior, altoValor);
+        }
+
+        private void ColocarTendencia(int x, int y, int ancho, int alto)
+        {
+            tarjetaTendencia.SetBounds(x, y, ancho, alto);
+            int top = notaTendencia.Bottom + 10;
+            graficoTendencia.SetBounds(16, top, ancho - 32, Math.Max(1, alto - top - 14));
+        }
+
+        private void ColocarEstructura(int x, int y, int ancho, int alto)
+        {
+            tarjetaEstructura.SetBounds(x, y, ancho, alto);
+            int top = notaEstructura.Bottom + 4;
+            graficoEstructura.SetBounds(6, top, ancho - 12, Math.Max(1, alto - top - 8));
+        }
+
+        private void ColocarSobres(int x, int y, int ancho, int alto)
+        {
+            tarjetaSobres.SetBounds(x, y, ancho, alto);
+            int top = etiquetaTotalSobres.Bottom + 10;
+            grillaSobres.SetBounds(16, top, ancho - 32, Math.Max(1, alto - top - 16));
+        }
+
+        private void ColocarAlertas(int x, int y, int ancho, int alto)
+        {
+            tarjetaAlertas.SetBounds(x, y, ancho, alto);
+            int top = notaAlertas.Bottom + 10;
+            notaAlertas.AutoSize = false;
+            notaAlertas.SetBounds(22, rotuloAlertas.Bottom + 2, ancho - 44, notaAlertas.PreferredHeight);
+            grillaAlertas.SetBounds(16, top, ancho - 32, Math.Max(1, alto - top - 16));
+            etiquetaSinAlertas.SetBounds(16, top, ancho - 32, Math.Max(1, alto - top - 16));
         }
 
         private void DistribuirCuenta(int ancho, int alto)
@@ -541,25 +566,29 @@ namespace FinOptima.Vista.Modulos
         private void CargarEstructura(ResumenDashboard resumen)
         {
             ResumenMensual mensual = Servicios.Analisis.ObtenerResumen(resumen.Anio, resumen.Mes);
-            Color[] colores = new Color[]
-            {
-                Color.FromArgb(23, 201, 100),
-                Color.FromArgb(0, 145, 255),
-                Color.FromArgb(245, 165, 36),
-                Color.FromArgb(147, 97, 255),
-                Color.FromArgb(243, 18, 96),
-                Color.FromArgb(0, 184, 169)
-            };
-
             List<SegmentoDona> segmentos = new List<SegmentoDona>();
 
             for (int indice = 0; indice < mensual.GastosPorCategoria.Count; indice = indice + 1)
             {
                 DetalleCategoria detalle = mensual.GastosPorCategoria[indice];
-                segmentos.Add(new SegmentoDona(detalle.Categoria, detalle.Monto, detalle.Porcentaje, colores[indice % colores.Length]));
+                segmentos.Add(new SegmentoDona(detalle.Categoria, detalle.Monto, detalle.Porcentaje, ColorCategoria(indice)));
             }
 
             graficoEstructura.EstablecerDatos(segmentos);
+        }
+
+        private static Color ColorCategoria(int indice)
+        {
+            if (indice < coloresCategoria.Length)
+            {
+                return coloresCategoria[indice];
+            }
+
+            int codigo = indice - coloresCategoria.Length + 1;
+            int azul = 32 + codigo % 192;
+            int verde = 32 + (codigo / 192) % 192;
+            int rojo = 32 + (codigo / (192 * 192)) % 192;
+            return Color.FromArgb(rojo, verde, azul);
         }
 
         private void AlActualizar(object remitente, EventArgs argumentos)

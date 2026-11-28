@@ -279,7 +279,7 @@ namespace FinOptima.Vista.Utilidades
 
         private static void AjustarAnchoGrilla(DataGridView grilla)
         {
-            if (grilla.Parent == null)
+            if (grilla.Parent == null || (grilla.Anchor & AnchorStyles.Right) == AnchorStyles.Right)
             {
                 return;
             }
@@ -317,6 +317,19 @@ namespace FinOptima.Vista.Utilidades
             nota.ForeColor = TemaActual.Actual.TextoSecundario;
             nota.BackColor = Color.Transparent;
             return nota;
+        }
+
+        public static void AjustarEtiqueta(Label etiqueta, int ancho)
+        {
+            if (etiqueta == null)
+            {
+                return;
+            }
+
+            int maximo = Math.Max(1, ancho);
+            etiqueta.AutoSize = true;
+            etiqueta.MaximumSize = new Size(maximo, 0);
+            etiqueta.Size = new Size(Math.Min(maximo, etiqueta.PreferredWidth), etiqueta.PreferredHeight);
         }
 
         public static Label CrearEtiquetaSuave(string texto, int x, int y)
@@ -474,6 +487,7 @@ namespace FinOptima.Vista.Utilidades
             tarjeta.Paint += AlPintarTarjeta;
 
             Panel franja = new Panel();
+            franja.Name = "Franja";
             franja.Location = new Point(0, 14);
             franja.Width = 4;
             franja.Height = alto - 28;
@@ -481,6 +495,7 @@ namespace FinOptima.Vista.Utilidades
             tarjeta.Controls.Add(franja);
 
             Label rotulo = new Label();
+            rotulo.Name = "Titulo";
             rotulo.Text = titulo;
             rotulo.Location = new Point(18, 12);
             rotulo.AutoSize = true;
@@ -505,6 +520,38 @@ namespace FinOptima.Vista.Utilidades
 
             Redondear(tarjeta, RadioTarjeta);
             return tarjeta;
+        }
+
+        public static void AjustarTarjeta(Panel tarjeta, int ancho, int alto)
+        {
+            if (tarjeta == null)
+            {
+                return;
+            }
+
+            tarjeta.Size = new Size(Math.Max(1, ancho), Math.Max(1, alto));
+
+            foreach (Control control in tarjeta.Controls)
+            {
+                Label etiqueta = control as Label;
+
+                if (control.Name == "Franja")
+                {
+                    control.Height = Math.Max(1, alto - 28);
+                }
+                else if (control.Name == "Titulo" && etiqueta != null)
+                {
+                    etiqueta.MaximumSize = new Size(Math.Max(1, ancho - 36), 0);
+                    etiqueta.Width = Math.Min(etiqueta.MaximumSize.Width, etiqueta.PreferredWidth);
+                    etiqueta.Height = etiqueta.PreferredHeight;
+                }
+                else if (control.Name == "Valor" && etiqueta != null)
+                {
+                    etiqueta.SetBounds(18, 34, Math.Max(1, ancho - 36), Math.Max(etiqueta.PreferredHeight, 34));
+                }
+            }
+
+            Redondear(tarjeta, RadioTarjeta);
         }
 
         private static void AlPintarTarjeta(object remitente, PaintEventArgs argumentos)
@@ -536,12 +583,14 @@ namespace FinOptima.Vista.Utilidades
             Tema tema = TemaActual.Actual;
             Color acento = tema.AcentoVisible(TemaActual.Acento);
 
+            formulario.AutoScaleMode = AutoScaleMode.Dpi;
+            formulario.AutoScaleDimensions = new SizeF(96, 96);
             formulario.BackColor = tema.Fondo;
             formulario.ForeColor = tema.Texto;
             formulario.Font = new Font("Segoe UI", 10);
             formulario.AutoScroll = true;
             formulario.StartPosition = FormStartPosition.CenterParent;
-            formulario.MinimumSize = new Size(formulario.Width, formulario.Height);
+            AjustarVentanaAPantalla(formulario);
             formulario.Paint += delegate(object remitente, PaintEventArgs argumentos)
             {
                 using (SolidBrush pincel = new SolidBrush(acento))
@@ -549,6 +598,33 @@ namespace FinOptima.Vista.Utilidades
                     argumentos.Graphics.FillRectangle(pincel, 0, 0, formulario.ClientSize.Width, 4);
                 }
             };
+        }
+
+        public static Size TamanoMaximoVentana(Form formulario)
+        {
+            Screen pantalla = formulario.Owner != null
+                ? Screen.FromControl(formulario.Owner)
+                : Screen.FromPoint(Cursor.Position);
+
+            if (pantalla == null)
+            {
+                pantalla = Screen.PrimaryScreen;
+            }
+
+            Rectangle area = pantalla.WorkingArea;
+            return new Size(Math.Max(320, area.Width - 32), Math.Max(240, area.Height - 64));
+        }
+
+        public static void AjustarVentanaAPantalla(Form formulario)
+        {
+            Size maximo = TamanoMaximoVentana(formulario);
+            Size deseado = formulario.ClientSize;
+            formulario.ClientSize = new Size(
+                Math.Min(deseado.Width, maximo.Width),
+                Math.Min(deseado.Height, maximo.Height));
+            formulario.MinimumSize = new Size(
+                Math.Min(formulario.MinimumSize.Width, maximo.Width),
+                Math.Min(formulario.MinimumSize.Height, maximo.Height));
         }
 
         public static void EstilizarCampos(Control contenedor)

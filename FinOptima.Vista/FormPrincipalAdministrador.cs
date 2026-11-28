@@ -14,8 +14,13 @@ namespace FinOptima.Vista
     public class FormPrincipalAdministrador : Form
     {
         private FabricaServicios servicios;
+        private ServicioBotLocal botLocal;
         private Panel cabecera;
         private Panel panelContenido;
+        private Panel panelMarca;
+        private FlowLayoutPanel panelAcciones;
+        private Label tituloMarca;
+        private Label notaMarca;
         private FlowLayoutPanel navegacion;
         private Label etiquetaUsuario;
         private ComboBox selectorTema;
@@ -28,9 +33,10 @@ namespace FinOptima.Vista
             get { return cerroSesion; }
         }
 
-        public FormPrincipalAdministrador(FabricaServicios fabrica)
+        public FormPrincipalAdministrador(FabricaServicios fabrica, ServicioBotLocal servicioBot)
         {
             servicios = fabrica;
+            botLocal = servicioBot;
             cerroSesion = false;
 
             if (!servicios.Sesion.HaySesion)
@@ -52,6 +58,8 @@ namespace FinOptima.Vista
 
         private void ConstruirInterfaz()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
             Tema tema = TemaActual.Actual;
             Color acento = tema.AcentoVisible(TemaActual.Acento);
 
@@ -59,7 +67,8 @@ namespace FinOptima.Vista
             UtilidadesVista.AplicarIcono(this);
             StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
-            MinimumSize = new Size(1240, 720);
+            Size maximo = UtilidadesVista.TamanoMaximoVentana(this);
+            MinimumSize = new Size(Math.Min(1240, maximo.Width), Math.Min(720, maximo.Height));
             BackColor = tema.Fondo;
             Font = new Font("Segoe UI", UtilidadesVista.TamanoFuenteSeguro(servicios.Sesion.Usuario.TamanoFuente));
 
@@ -79,20 +88,24 @@ namespace FinOptima.Vista
             navegacion.BackColor = tema.Cabecera;
             navegacion.FlowDirection = FlowDirection.LeftToRight;
             navegacion.WrapContents = false;
+            navegacion.AutoScroll = true;
             navegacion.Padding = new Padding(2, 19, 0, 0);
 
-            Panel marca = CrearMarcaVisual(tema, acento);
-            Panel acciones = CrearAccionesUsuario(tema);
+            panelMarca = CrearMarcaVisual(tema, acento);
+            panelAcciones = CrearAccionesUsuario(tema);
 
             AgregarBotonNav("Administracion", "administracion");
             AgregarBotonNav("Mi perfil", "perfil");
+            AgregarBotonNav("Telegram", "telegram");
 
             cabecera.Controls.Add(navegacion);
-            cabecera.Controls.Add(marca);
-            cabecera.Controls.Add(acciones);
+            cabecera.Controls.Add(panelMarca);
+            cabecera.Controls.Add(panelAcciones);
+            cabecera.ClientSizeChanged += AjustarCabecera;
 
             Controls.Add(panelContenido);
             Controls.Add(cabecera);
+            AjustarCabecera(cabecera, EventArgs.Empty);
         }
 
         private Panel CrearMarcaVisual(Tema tema, Color acento)
@@ -102,6 +115,7 @@ namespace FinOptima.Vista
             Panel marca = new Panel();
             marca.Dock = DockStyle.Left;
             marca.Width = 216;
+            marca.Tag = 216;
             marca.BackColor = tema.Cabecera;
 
             LogoFinOptima logo = new LogoFinOptima();
@@ -111,37 +125,39 @@ namespace FinOptima.Vista
             logo.ColorAcento = acentoVisible;
             marca.Controls.Add(logo);
 
-            Label titulo = new Label();
-            titulo.Text = "FinOptima";
-            titulo.AutoSize = true;
-            titulo.Font = new Font("Segoe UI", 15, FontStyle.Bold);
-            titulo.ForeColor = tema.CabeceraTexto;
-            titulo.BackColor = Color.Transparent;
-            titulo.Location = new Point(66, 14);
-            marca.Controls.Add(titulo);
+            tituloMarca = new Label();
+            tituloMarca.Text = "FinOptima";
+            tituloMarca.AutoSize = true;
+            tituloMarca.Font = new Font("Segoe UI", 15, FontStyle.Bold);
+            tituloMarca.ForeColor = tema.CabeceraTexto;
+            tituloMarca.BackColor = Color.Transparent;
+            tituloMarca.Location = new Point(66, 14);
+            marca.Controls.Add(tituloMarca);
 
-            Label nota = new Label();
-            nota.Text = "Administracion de cuentas";
-            nota.AutoSize = true;
-            nota.Font = new Font("Segoe UI", 7.5f);
-            nota.ForeColor = tema.CabeceraSuave;
-            nota.BackColor = Color.Transparent;
-            nota.Location = new Point(68, 42);
-            marca.Controls.Add(nota);
+            notaMarca = new Label();
+            notaMarca.Text = "Administracion de cuentas";
+            notaMarca.AutoSize = true;
+            notaMarca.Font = new Font("Segoe UI", 7.5f);
+            notaMarca.ForeColor = tema.CabeceraSuave;
+            notaMarca.BackColor = Color.Transparent;
+            notaMarca.Location = new Point(68, tituloMarca.Bottom + 2);
+            marca.Controls.Add(notaMarca);
 
             return marca;
         }
 
-        private Panel CrearAccionesUsuario(Tema tema)
+        private FlowLayoutPanel CrearAccionesUsuario(Tema tema)
         {
             FlowLayoutPanel acciones = new FlowLayoutPanel();
             acciones.Dock = DockStyle.Right;
-            acciones.FlowDirection = FlowDirection.RightToLeft;
-            acciones.WrapContents = false;
+            acciones.FlowDirection = FlowDirection.LeftToRight;
+            acciones.WrapContents = true;
+            acciones.AutoScroll = true;
             acciones.BackColor = tema.Cabecera;
             acciones.Padding = new Padding(0, 19, 12, 0);
 
             BotonContorno salir = new BotonContorno();
+            salir.Name = "Salir";
             salir.Text = "Salir";
             salir.Size = new Size(78, 38);
             salir.MinimumSize = new Size(0, 0);
@@ -154,7 +170,9 @@ namespace FinOptima.Vista
             salir.Margin = new Padding(8, 0, 0, 0);
             salir.Click += AlCerrarSesion;
 
-            selectorTema = UtilidadesVista.CrearLista(0, 0, 164);
+            selectorTema = UtilidadesVista.CrearLista(0, 0, 184);
+            selectorTema.Name = "SelectorTema";
+            selectorTema.Font = new Font("Segoe UI", 9);
             selectorTema.DisplayMember = "Etiqueta";
             selectorTema.Margin = new Padding(8, 4, 0, 0);
 
@@ -170,6 +188,7 @@ namespace FinOptima.Vista
             selectorTema.SelectedIndexChanged += AlCambiarTema;
 
             etiquetaUsuario = new Label();
+            etiquetaUsuario.Name = "Usuario";
             etiquetaUsuario.Text = servicios.Sesion.Usuario.NombreCompleto;
             etiquetaUsuario.ForeColor = tema.CabeceraTexto;
             etiquetaUsuario.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
@@ -180,13 +199,80 @@ namespace FinOptima.Vista
             etiquetaUsuario.Height = 38;
             etiquetaUsuario.Margin = new Padding(14, 0, 0, 0);
 
-            acciones.Controls.Add(salir);
             acciones.Controls.Add(selectorTema);
             acciones.Controls.Add(etiquetaUsuario);
+            acciones.Controls.Add(salir);
 
-            int ancho = 12 + 78 + 8 + 164 + 8 + etiquetaUsuario.Width + 12;
+            int ancho = 12 + 78 + 8 + 184 + 8 + etiquetaUsuario.Width + 12;
             acciones.Width = ancho;
             return acciones;
+        }
+
+        private void AjustarCabecera(object remitente, EventArgs argumentos)
+        {
+            if (panelMarca == null || panelAcciones == null || etiquetaUsuario == null)
+            {
+                return;
+            }
+
+            etiquetaUsuario.Visible = true;
+            tituloMarca.Visible = true;
+            notaMarca.Visible = true;
+            panelMarca.Width = EscalarCabecera(216);
+            ActualizarAnchoAcciones();
+            int anchoAcciones = panelAcciones.Width;
+            int minimoNavegacion = EscalarCabecera(70);
+
+            if (cabecera.ClientSize.Width < panelMarca.Width + anchoAcciones + minimoNavegacion)
+            {
+                tituloMarca.Visible = false;
+                notaMarca.Visible = false;
+                panelMarca.Width = EscalarCabecera(64);
+            }
+
+            if (cabecera.ClientSize.Width >= panelMarca.Width + anchoAcciones + minimoNavegacion)
+            {
+                panelAcciones.WrapContents = false;
+                panelAcciones.AutoScroll = false;
+                panelAcciones.Width = anchoAcciones;
+                cabecera.Height = EscalarCabecera(76);
+            }
+            else
+            {
+                panelAcciones.WrapContents = true;
+                panelAcciones.AutoScroll = true;
+                int anchoDisponible = Math.Max(
+                    EscalarCabecera(280),
+                    cabecera.ClientSize.Width - panelMarca.Width - minimoNavegacion);
+                panelAcciones.Width = Math.Min(anchoAcciones, anchoDisponible);
+                cabecera.Height = EscalarCabecera(118);
+            }
+
+            navegacion.Padding = new Padding(
+                2,
+                Math.Max(0, (cabecera.ClientSize.Height - EscalarCabecera(38)) / 2),
+                0,
+                0);
+        }
+
+        private void ActualizarAnchoAcciones()
+        {
+            int ancho = panelAcciones.Padding.Horizontal;
+
+            foreach (Control control in panelAcciones.Controls)
+            {
+                if (control.Visible)
+                {
+                    ancho = ancho + control.Width + control.Margin.Horizontal;
+                }
+            }
+
+            panelAcciones.Width = ancho;
+        }
+
+        private int EscalarCabecera(int valor)
+        {
+            return (int)Math.Round(valor * DeviceDpi / 96f);
         }
 
         private Button AgregarBotonNav(string texto, string clave)
@@ -208,9 +294,30 @@ namespace FinOptima.Vista
         private void AlElegirModulo(object remitente, EventArgs argumentos)
         {
             Button boton = (Button)remitente;
+
+            if ((string)boton.Tag == "telegram")
+            {
+                AbrirTelegram();
+                return;
+            }
+
             claveModuloActual = (string)boton.Tag;
             ActualizarNavegacion();
             MostrarModuloPorClave(claveModuloActual);
+        }
+
+        private void AbrirTelegram()
+        {
+            if (botLocal == null)
+            {
+                UtilidadesVista.AvisarError("El bot local no esta disponible.");
+                return;
+            }
+
+            using (FormTelegram telegram = new FormTelegram(botLocal))
+            {
+                telegram.ShowDialog(this);
+            }
         }
 
         private void ActualizarNavegacion()
@@ -258,6 +365,7 @@ namespace FinOptima.Vista
         {
             panelContenido.SuspendLayout();
             LimpiarContenido();
+            formulario.MinimumSize = Size.Empty;
             formulario.TopLevel = false;
             formulario.FormBorderStyle = FormBorderStyle.None;
             formulario.Dock = DockStyle.Fill;

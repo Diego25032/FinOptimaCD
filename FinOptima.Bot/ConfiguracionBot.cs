@@ -20,21 +20,40 @@ namespace FinOptima.Bot
         public static ConfiguracionBot Leer()
         {
             ConfiguracionBot configuracion = new ConfiguracionBot();
-            configuracion.Token = LeerRequerida("FINOPTIMA_TELEGRAM_TOKEN");
+            configuracion.Token = LeerToken();
             configuracion.Correo = LeerRequerida("FINOPTIMA_BOT_CORREO");
             configuracion.Contrasena = LeerRequerida("FINOPTIMA_BOT_CONTRASENA");
+            configuracion.ChatId = LeerChatId();
+            return configuracion;
+        }
 
+        public static string LeerToken()
+        {
+            string token = LeerRequerida("FINOPTIMA_TELEGRAM_TOKEN");
+            int separador = token.IndexOf(':');
+            long idBot;
+
+            if (separador <= 0 || separador == token.Length - 1 ||
+                !long.TryParse(token.Substring(0, separador), out idBot) || idBot <= 0)
+            {
+                throw new InvalidOperationException("FINOPTIMA_TELEGRAM_TOKEN no tiene el formato de un token de BotFather (123456789:ABC...).");
+            }
+
+            return token;
+        }
+
+        public static long LeerChatId()
+        {
             string chat = LeerRequerida("FINOPTIMA_TELEGRAM_CHAT");
             long numero;
             bool esNumero = long.TryParse(chat, out numero);
 
-            if (!esNumero)
+            if (!esNumero || numero == 0)
             {
-                throw new InvalidOperationException("FINOPTIMA_TELEGRAM_CHAT debe ser un numero (el id del chat autorizado).");
+                throw new InvalidOperationException("FINOPTIMA_TELEGRAM_CHAT debe ser un numero distinto de cero (el id del chat autorizado).");
             }
 
-            configuracion.ChatId = numero;
-            return configuracion;
+            return numero;
         }
 
         private static string LeerRequerida(string nombre)

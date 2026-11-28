@@ -31,6 +31,7 @@ namespace FinOptima.Vista
 
         private void ConstruirInterfaz()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
             Text = "Sobre";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

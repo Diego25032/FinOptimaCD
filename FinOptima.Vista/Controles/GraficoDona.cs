@@ -293,29 +293,23 @@ namespace FinOptima.Vista.Controles
                 return;
             }
 
-            int visibles = segmentos.Count;
-
-            if (visibles > 5)
-            {
-                visibles = 5;
-            }
-
-            int altoFila = 32;
-            int altoTotal = visibles * altoFila;
-            int y = (Height - altoTotal) / 2;
+            int altoFila = Math.Min(30, Math.Max(18, (Height - 12) / segmentos.Count));
+            int altoTotal = segmentos.Count * altoFila;
+            int y = Math.Max(4, (Height - altoTotal) / 2);
 
             using (Font fuente = new Font("Segoe UI", 8.5f))
             {
                 using (Font porcentaje = new Font("Segoe UI", 8.5f))
                 {
-                    for (int indice = 0; indice < visibles; indice = indice + 1)
+                    for (int indice = 0; indice < segmentos.Count; indice = indice + 1)
                     {
                         SegmentoDona segmento = segmentos[indice];
                         int yFila = y + indice * altoFila;
+                        int yPunto = yFila + (altoFila - 9) / 2;
 
                         using (SolidBrush punto = new SolidBrush(segmento.Color))
                         {
-                            grafico.FillEllipse(punto, xLeyenda, yFila + 10, 9, 9);
+                            grafico.FillEllipse(punto, xLeyenda, yPunto, 9, 9);
                         }
 
                         string nombre = segmento.Nombre;
@@ -325,31 +319,18 @@ namespace FinOptima.Vista.Controles
                             nombre = nombre.Substring(0, 17) + "...";
                         }
 
-                        Rectangle zonaNombre = new Rectangle(xLeyenda + 16, yFila + 2, anchoLeyenda - 66, 24);
+                        Rectangle zonaNombre = new Rectangle(xLeyenda + 16, yFila, anchoLeyenda - 74, altoFila);
                         DibujarTexto(grafico, nombre, fuente, zonaNombre, colorTexto, StringAlignment.Near);
 
-                        string textoPorcentaje = UtilidadesVista.Porcentaje(Math.Round(segmento.Porcentaje, 0));
+                        string textoPorcentaje = UtilidadesVista.Porcentaje(segmento.Porcentaje);
                         Size medida = TextRenderer.MeasureText(textoPorcentaje, porcentaje);
                         Rectangle zonaPorcentaje = new Rectangle(
                             xLeyenda + anchoLeyenda - medida.Width,
-                            yFila + 2,
+                            yFila,
                             medida.Width,
-                            24);
+                            altoFila);
 
                         DibujarTexto(grafico, textoPorcentaje, porcentaje, zonaPorcentaje, TemaActual.Actual.Texto, StringAlignment.Far);
-                    }
-
-                    if (segmentos.Count > visibles)
-                    {
-                        int yExtra = y + visibles * altoFila + 2;
-                        string textoExtra = "+" + (segmentos.Count - visibles) + " categorias mas";
-                        DibujarTexto(
-                            grafico,
-                            textoExtra,
-                            fuente,
-                            new Rectangle(xLeyenda + 16, yExtra, anchoLeyenda - 32, 24),
-                            colorTexto,
-                            StringAlignment.Near);
                     }
                 }
             }

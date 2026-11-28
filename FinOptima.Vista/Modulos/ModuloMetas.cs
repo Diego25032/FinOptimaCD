@@ -61,6 +61,8 @@ namespace FinOptima.Vista.Modulos
             Button actualizar = BotonSecundario("Actualizar", Margen + 550, 490, 120);
             actualizar.Click += AlActualizar;
             Controls.Add(actualizar);
+
+            AnclarListado(grilla, nueva, editar, aportar, eliminar, actualizar);
         }
 
         private void CargarDatos()

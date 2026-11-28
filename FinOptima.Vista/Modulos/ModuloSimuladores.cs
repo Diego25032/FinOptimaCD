@@ -15,25 +15,35 @@ namespace FinOptima.Vista.Modulos
         private ComboBox campoMeta;
         private NumericUpDown campoAhorroMensual;
         private Label resultadoAhorro;
+        private Label etiquetaMeta;
+        private Label etiquetaAhorro;
         private ComboBox campoDeuda;
         private NumericUpDown campoPagoMensual;
         private Label resultadoDeuda;
+        private Label etiquetaDeuda;
+        private Label etiquetaPago;
+        private Label nota;
+        private GroupBox grupoAhorro;
+        private GroupBox grupoDeuda;
+        private Button simularAhorro;
+        private Button simularDeuda;
 
         public ModuloSimuladores(FabricaServicios servicios) : base(servicios, "Simuladores")
         {
             ConstruirInterfaz();
             CargarMetas();
             CargarDeudas();
+            Distribuir();
         }
 
         private void ConstruirInterfaz()
         {
-            Label nota = UtilidadesVista.CrearNota(
+            nota = UtilidadesVista.CrearNota(
                 "Calcula cuanto tiempo necesitas para cumplir una meta o pagar una deuda.",
-                Margen, 55, 880);
+                Margen, InicioContenido, 880);
             Controls.Add(nota);
 
-            GroupBox grupoAhorro = new GroupBox();
+            grupoAhorro = new GroupBox();
             grupoAhorro.Text = "Simulacion de ahorro";
             grupoAhorro.Location = new Point(Margen, 90);
             grupoAhorro.Size = new Size(430, 330);
@@ -42,13 +52,13 @@ namespace FinOptima.Vista.Modulos
             grupoAhorro.BackColor = Color.Transparent;
             Controls.Add(grupoAhorro);
 
-            Label etiquetaMeta = UtilidadesVista.CrearEtiqueta("Meta", 20, 30);
+            etiquetaMeta = UtilidadesVista.CrearEtiqueta("Meta", 20, 30);
             grupoAhorro.Controls.Add(etiquetaMeta);
 
             campoMeta = UtilidadesVista.CrearLista(20, 56, 380);
             grupoAhorro.Controls.Add(campoMeta);
 
-            Label etiquetaAhorro = UtilidadesVista.CrearEtiqueta("Ahorro mensual", 20, 98);
+            etiquetaAhorro = UtilidadesVista.CrearEtiqueta("Ahorro mensual", 20, 98);
             grupoAhorro.Controls.Add(etiquetaAhorro);
 
             campoAhorroMensual = new NumericUpDown();
@@ -60,7 +70,7 @@ namespace FinOptima.Vista.Modulos
             UtilidadesVista.EstilizarCampo(campoAhorroMensual);
             grupoAhorro.Controls.Add(campoAhorroMensual);
 
-            Button simularAhorro = UtilidadesVista.CrearBoton("Simular", 220, 122, 180, 32, Acento);
+            simularAhorro = UtilidadesVista.CrearBoton("Simular", 220, 122, 180, 32, Acento);
             simularAhorro.Click += AlSimularAhorro;
             grupoAhorro.Controls.Add(simularAhorro);
 
@@ -70,7 +80,7 @@ namespace FinOptima.Vista.Modulos
             resultadoAhorro.ForeColor = TemaActual.Actual.Texto;
             grupoAhorro.Controls.Add(resultadoAhorro);
 
-            GroupBox grupoDeuda = new GroupBox();
+            grupoDeuda = new GroupBox();
             grupoDeuda.Text = "Simulacion de pago de deuda";
             grupoDeuda.Location = new Point(Margen + 460, 90);
             grupoDeuda.Size = new Size(430, 330);
@@ -79,13 +89,13 @@ namespace FinOptima.Vista.Modulos
             grupoDeuda.BackColor = Color.Transparent;
             Controls.Add(grupoDeuda);
 
-            Label etiquetaDeuda = UtilidadesVista.CrearEtiqueta("Deuda", 20, 30);
+            etiquetaDeuda = UtilidadesVista.CrearEtiqueta("Deuda", 20, 30);
             grupoDeuda.Controls.Add(etiquetaDeuda);
 
             campoDeuda = UtilidadesVista.CrearLista(20, 56, 380);
             grupoDeuda.Controls.Add(campoDeuda);
 
-            Label etiquetaPago = UtilidadesVista.CrearEtiqueta("Pago mensual", 20, 98);
+            etiquetaPago = UtilidadesVista.CrearEtiqueta("Pago mensual", 20, 98);
             grupoDeuda.Controls.Add(etiquetaPago);
 
             campoPagoMensual = new NumericUpDown();
@@ -97,7 +107,7 @@ namespace FinOptima.Vista.Modulos
             UtilidadesVista.EstilizarCampo(campoPagoMensual);
             grupoDeuda.Controls.Add(campoPagoMensual);
 
-            Button simularDeuda = UtilidadesVista.CrearBoton("Simular", 220, 122, 180, 32, Acento);
+            simularDeuda = UtilidadesVista.CrearBoton("Simular", 220, 122, 180, 32, Acento);
             simularDeuda.Click += AlSimularDeuda;
             grupoDeuda.Controls.Add(simularDeuda);
 
@@ -106,6 +116,85 @@ namespace FinOptima.Vista.Modulos
             resultadoDeuda.Size = new Size(380, 145);
             resultadoDeuda.ForeColor = TemaActual.Actual.Texto;
             grupoDeuda.Controls.Add(resultadoDeuda);
+        }
+
+        protected override void OnResize(EventArgs argumentos)
+        {
+            base.OnResize(argumentos);
+            Distribuir();
+        }
+
+        private void Distribuir()
+        {
+            if (grupoAhorro == null || grupoDeuda == null || Recalculando)
+            {
+                return;
+            }
+
+            Recalculando = true;
+            SuspendLayout();
+
+            try
+            {
+                int separacion = Escalar(20);
+                int anchoMinimo = Escalar(400);
+                int ancho = ClientSize.Width - Margen * 2;
+                bool enColumnas = ancho >= anchoMinimo * 2 + separacion;
+                int altoGrupo = Math.Min(Escalar(420), Math.Max(Escalar(320), ClientSize.Height - Escalar(120)));
+
+                UtilidadesVista.AjustarEtiqueta(nota, ancho);
+                int inicio = nota.Bottom + 14;
+                int inicioLogico = inicio - AutoScrollPosition.Y;
+                int filas = enColumnas ? 1 : 2;
+                int altoContenido = inicioLogico + altoGrupo * filas + separacion * (filas - 1) + Margen;
+
+                if (altoContenido > ClientSize.Height && !VerticalScroll.Visible)
+                {
+                    ancho = ClientSize.Width - Margen * 2 - SystemInformation.VerticalScrollBarWidth;
+                    enColumnas = ancho >= anchoMinimo * 2 + separacion;
+                    UtilidadesVista.AjustarEtiqueta(nota, ancho);
+                    inicio = nota.Bottom + 14;
+                    inicioLogico = inicio - AutoScrollPosition.Y;
+                    filas = enColumnas ? 1 : 2;
+                    altoContenido = inicioLogico + altoGrupo * filas + separacion * (filas - 1) + Margen;
+                }
+
+                if (ancho < anchoMinimo)
+                {
+                    ancho = anchoMinimo;
+                }
+
+                int anchoGrupo = enColumnas ? (ancho - separacion) / 2 : ancho;
+                int x = Margen + AutoScrollPosition.X;
+
+                grupoAhorro.SetBounds(x, inicio, anchoGrupo, altoGrupo);
+                grupoDeuda.SetBounds(
+                    enColumnas ? x + anchoGrupo + separacion : x,
+                    enColumnas ? inicio : inicio + altoGrupo + separacion,
+                    anchoGrupo,
+                    altoGrupo);
+
+                AjustarGrupo(grupoAhorro, campoMeta, campoAhorroMensual, simularAhorro, resultadoAhorro);
+                AjustarGrupo(grupoDeuda, campoDeuda, campoPagoMensual, simularDeuda, resultadoDeuda);
+
+                AutoScrollMinSize = new Size(ancho + Margen * 2, altoContenido);
+            }
+            finally
+            {
+                ResumeLayout(false);
+                Recalculando = false;
+            }
+        }
+
+        private static void AjustarGrupo(GroupBox grupo, ComboBox lista, NumericUpDown monto, Button boton, Label resultado)
+        {
+            int interior = grupo.Width - 40;
+            int anchoMonto = Math.Min(180, (interior - 20) / 2);
+
+            lista.SetBounds(20, 56, interior, lista.Height);
+            monto.SetBounds(20, 124, anchoMonto, monto.Height);
+            boton.SetBounds(20 + anchoMonto + 20, 122, interior - anchoMonto - 20, boton.Height);
+            resultado.SetBounds(20, 170, interior, Math.Max(60, grupo.Height - 190));
         }
 
         private void CargarMetas()

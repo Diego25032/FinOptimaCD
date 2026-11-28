@@ -29,6 +29,7 @@ namespace FinOptima.Vista
             StartPosition = FormStartPosition.CenterScreen;
             ShowInTaskbar = false;
             AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
             ClientSize = new Size(420, 300);
             BackColor = tema.Superficie;
             Opacity = 0;

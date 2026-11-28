@@ -4,10 +4,11 @@ using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 
 namespace FinOptima.Bot
 {
-    public class ClienteTelegram : ICanalTelegram
+    public class ClienteTelegram : ICanalTelegram, IDisposable
     {
         private string token;
         private HttpClient cliente;
@@ -21,12 +22,17 @@ namespace FinOptima.Bot
 
         public List<ActualizacionTelegram> ObtenerActualizaciones(int ultimoNumero, int esperaSegundos)
         {
+            return ObtenerActualizaciones(ultimoNumero, esperaSegundos, CancellationToken.None);
+        }
+
+        public List<ActualizacionTelegram> ObtenerActualizaciones(int ultimoNumero, int esperaSegundos, CancellationToken cancelacion)
+        {
             string url = Direccion("getUpdates")
                 + "?timeout=" + esperaSegundos
                 + "&offset=" + ultimoNumero
                 + "&allowed_updates=%5B%22message%22%2C%22callback_query%22%5D";
 
-            string cuerpo = Solicitar(url, null);
+            string cuerpo = Solicitar(url, null, cancelacion);
             List<ActualizacionTelegram> lista = new List<ActualizacionTelegram>();
 
             using (JsonDocument documento = JsonDocument.Parse(cuerpo))
@@ -136,6 +142,23 @@ namespace FinOptima.Bot
             Enviar("setMyCommands", json);
         }
 
+        public string ObtenerNombreUsuario()
+        {
+            string cuerpo = Solicitar(Direccion("getMe"), null);
+
+            using (JsonDocument documento = JsonDocument.Parse(cuerpo))
+            {
+                JsonElement raiz = documento.RootElement;
+                VerificarRespuesta(raiz);
+                return raiz.GetProperty("result").GetProperty("username").GetString();
+            }
+        }
+
+        public void Dispose()
+        {
+            cliente.Dispose();
+        }
+
         private void Enviar(string metodo, string json)
         {
             string cuerpo = Solicitar(Direccion(metodo), json);
@@ -146,7 +169,7 @@ namespace FinOptima.Bot
             }
         }
 
-        private string Solicitar(string url, string contenidoJson)
+        private string Solicitar(string url, string contenidoJson, CancellationToken cancelacion = default)
         {
             HttpRequestMessage solicitud;
 
@@ -162,7 +185,7 @@ namespace FinOptima.Bot
 
             using (solicitud)
             {
-                using (HttpResponseMessage respuesta = cliente.Send(solicitud))
+                using (HttpResponseMessage respuesta = cliente.Send(solicitud, cancelacion))
                 {
                     using (StreamReader lector = new StreamReader(respuesta.Content.ReadAsStream()))
                     {
